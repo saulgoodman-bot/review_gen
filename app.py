@@ -24,7 +24,6 @@ def index():
 @app.route("/generate", methods=["POST"])
 def generate():
     try:
-        image1 = request.files.get("image1")
         image2 = request.files.get("image2")
         movie_name = (request.form.get("movie_name") or "").strip()
         review_text = (request.form.get("review_text") or "").strip()
