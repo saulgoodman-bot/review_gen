@@ -3,12 +3,13 @@
 A tiny Flask tool that turns a movie review into two ready-to-post Instagram
 squares (1080×1080):
 
-1. **Cover slide** — your movie image set inside an illustrated clapperboard.
-2. **Review slide** — a second movie image as a dimmed backdrop, with your
+1. **Cover slide** — the supplied clapperboard photograph, with your movie
+   name in the upper-left.
+2. **Review slide** — a movie image as a dimmed backdrop, with your
    review text and a 5-star rating (0.5 increments) on top.
 
-Everything is drawn with Pillow on the server — no Canva, no external image
-APIs, nothing to pay for.
+The cover uses the supplied artwork and the review is drawn with Pillow on
+the server — no Canva, no external image APIs, nothing to pay for.
 
 ## Run it locally
 
@@ -33,7 +34,7 @@ Visit `http://localhost:5000`.
      Render picks it up automatically)
 4. (Optional) Add environment variables so the posts carry your own brand
    text instead of the placeholders:
-   - `BRAND_HANDLE` — shown top-right of the cover slide, e.g. `@yourhandle`
+   - `BRAND_HANDLE` — shown in the tool header, e.g. `@yourhandle`
    - `BRAND_WATERMARK` — the faint diagonal watermark on the review slide,
      e.g. `YOUR PAGE NAME`
 5. Deploy. Render gives you a `https://your-app.onrender.com` URL — that's
@@ -44,9 +45,11 @@ first request after a while takes ~30–50s to wake up. That's normal.
 
 ## Customizing the look
 
-All drawing logic lives in `utils/image_gen.py`:
-- `STRIPE_COLORS`, `GOLD`, `INK`, `PAPER` — the color palette
-- `generate_cover_image()` — the clapperboard slide
+Cover artwork is stored in `static/images/cover-template.png` and tracked with
+Git LFS, so clone the repository with Git LFS enabled before running the app.
+All dynamic drawing logic lives in `utils/image_gen.py`:
+- `GOLD` — the star accent color
+- `generate_cover_image()` — the supplied cover template with the movie title
 - `generate_review_image()` — the review slide (blur amount, overlay
   darkness, watermark text, star size, etc.)
 
