@@ -81,6 +81,59 @@ const loading = document.getElementById("loading");
 const resultsEmpty = document.getElementById("results-empty");
 const resultsGrid = document.getElementById("results-grid");
 
+const MAX_UPLOAD_DIMENSION = 2048;
+
+async function resizeImageForUpload(file) {
+  // Camera images are much larger than either generated square. Resizing them
+  // on-device keeps mobile uploads below hosting/proxy request limits.
+  if (!file.type.startsWith("image/") || typeof createImageBitmap !== "function") {
+    return file;
+  }
+
+  let bitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, MAX_UPLOAD_DIMENSION / Math.max(bitmap.width, bitmap.height));
+    if (scale === 1 && file.size <= 8 * 1024 * 1024) return file;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.9));
+    return blob ? new File([blob], `${file.name.replace(/\.[^.]+$/, "") || "image"}.jpg`, {
+      type: "image/jpeg",
+    }) : file;
+  } catch (_error) {
+    // Keep the original file if a browser cannot decode or convert it.
+    return file;
+  } finally {
+    if (bitmap && typeof bitmap.close === "function") bitmap.close();
+  }
+}
+
+async function formDataWithMobileImages() {
+  const formData = new FormData(form);
+  await Promise.all(["image1", "image2"].map(async (fieldName) => {
+    const input = document.getElementById(fieldName);
+    const file = input.files[0];
+    if (file) formData.set(fieldName, await resizeImageForUpload(file));
+  }));
+  return formData;
+}
+
+async function readResponse(res) {
+  const body = await res.text();
+  try {
+    return JSON.parse(body);
+  } catch (_error) {
+    if (res.status === 413) {
+      return { error: "Your images are too large. Choose smaller images and try again." };
+    }
+    return { error: "The server returned an unexpected response. Please try again." };
+  }
+}
+
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   errorBox.hidden = true;
@@ -92,7 +145,6 @@ form.addEventListener("submit", async (e) => {
     return;
   }
 
-  const formData = new FormData(form);
   btn.disabled = true;
   btn.textContent = "Generating…";
   resultsEmpty.hidden = true;
@@ -100,8 +152,9 @@ form.addEventListener("submit", async (e) => {
   loading.hidden = false;
 
   try {
+    const formData = await formDataWithMobileImages();
     const res = await fetch("/generate", { method: "POST", body: formData });
-    const data = await res.json();
+    const data = await readResponse(res);
     if (!res.ok) throw new Error(data.error || "Generation failed.");
 
     document.getElementById("cover-preview").src = data.cover;
