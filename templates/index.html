@@ -26,17 +26,11 @@
     <form id="review-form">
 
       <div class="field">
-        <label class="field__label" for="image1">
-          <span class="field__num">01</span> Cover image <em>(sits inside the clapperboard)</em>
+        <label class="field__label" for="movie_name">
+          <span class="field__num">01</span> Movie name <em>(appears on the cover slide)</em>
         </label>
-        <div class="dropzone" data-target="image1">
-          <input type="file" id="image1" name="image1" accept="image/*" required hidden>
-          <div class="dropzone__empty">
-            <div class="dropzone__icon">🎬</div>
-            <p>Click or drop a movie image</p>
-          </div>
-          <img class="dropzone__preview" alt="">
-        </div>
+        <input type="text" id="movie_name" name="movie_name" maxlength="80"
+          placeholder="e.g. Roadside" required>
       </div>
 
       <div class="field">
