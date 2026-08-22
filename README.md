@@ -4,7 +4,7 @@ A tiny Flask tool that turns a movie review into two ready-to-post Instagram
 squares (1080×1080):
 
 1. **Cover slide** — the supplied clapperboard photograph, with your movie
-   name in the upper-left.
+   poster in the slate and movie name in the upper-left.
 2. **Review slide** — a movie image as a dimmed backdrop, with your
    review text and a 5-star rating (0.5 increments) on top.
 
@@ -49,7 +49,7 @@ Cover artwork is stored in `static/images/cover-template.png` and tracked with
 Git LFS, so clone the repository with Git LFS enabled before running the app.
 All dynamic drawing logic lives in `utils/image_gen.py`:
 - `GOLD` — the star accent color
-- `generate_cover_image()` — the supplied cover template with the movie title
+- `generate_cover_image()` — the supplied cover template with the poster and movie title
 - `generate_review_image()` — the review slide (blur amount, overlay
   darkness, watermark text, star size, etc.)
 

@@ -3,6 +3,7 @@ Image generation engine for the movie-review Instagram post generator.
 
 Produces a supplied square cover template and a 1080x1080 review PNG from user input:
   1. cover image  -> the supplied clapperboard cover artwork with the
+                      uploaded movie poster inserted into the slate and the
                       entered movie title added at the upper-left.
   2. review image -> the second movie image as a dimmed backdrop with the
                       review text and a 5-star (0.5-increment) rating on top.
@@ -141,14 +142,20 @@ def draw_rating_row(canvas: Image.Image, rating: float, center_x: int, y: int,
 
 
 # ---- cover image ----------------------------------------------------------
-def generate_cover_image(movie_name: str) -> Image.Image:
-    """Return the supplied cover artwork with the movie title at upper-left.
-
-    The artwork is deliberately used as-is: only the movie name is added in the
-    otherwise open upper-left portion, mirroring the large "OPINION" wordmark.
-    """
+def generate_cover_image(image1: Image.Image, movie_name: str) -> Image.Image:
+    """Add the uploaded poster and title to the supplied cover artwork."""
     with Image.open(COVER_TEMPLATE) as template:
         canvas = ImageOps.exif_transpose(template).convert("RGB")
+
+    # The panel below the clapper sticks is the poster window in the supplied
+    # artwork.  Keeping the coordinates relative preserves the template's
+    # composition at its native resolution.
+    poster_x = int(canvas.width * 0.175)
+    poster_y = int(canvas.height * 0.445)
+    poster_w = int(canvas.width * 0.585)
+    poster_h = int(canvas.height * 0.345)
+    poster = cover_resize(image1, poster_w, poster_h)
+    canvas.paste(poster, (poster_x, poster_y))
 
     draw = ImageDraw.Draw(canvas)
     max_width = int(canvas.width * 0.66)
