@@ -24,6 +24,7 @@ def index():
 @app.route("/generate", methods=["POST"])
 def generate():
     try:
+        cover_file = request.files.get("image1")
         image2 = request.files.get("image2")
         movie_name = (request.form.get("movie_name") or "").strip()
         review_text = (request.form.get("review_text") or "").strip()
@@ -31,7 +32,7 @@ def generate():
 
         if not movie_name:
             return jsonify(error="Please enter the movie name."), 400
-        if not image1:
+        if not cover_file:
             return jsonify(error="Please upload a cover image."), 400
         if not image2:
             return jsonify(error="Please upload a backdrop image."), 400
@@ -45,7 +46,7 @@ def generate():
         rating = max(0.0, min(5.0, round(rating * 2) / 2))
 
         try:
-            img1 = Image.open(image1.stream)
+            img1 = Image.open(cover_file.stream)
             img1.load()
         except Exception:
             return jsonify(error="Cover image could not be read. Try a different file."), 400
