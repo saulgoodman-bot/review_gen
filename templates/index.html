@@ -26,14 +26,22 @@
     <form id="review-form">
 
       <div class="field">
+        <label class="field__label" for="movie_name">
+          <span class="field__num">01</span> Movie name <em>(appears on the cover slide)</em>
+        </label>
+        <input type="text" id="movie_name" name="movie_name" maxlength="80"
+          placeholder="e.g. Roadside" required>
+      </div>
+
+      <div class="field">
         <label class="field__label" for="image1">
-          <span class="field__num">01</span> Cover image <em>(sits inside the clapperboard)</em>
+          <span class="field__num">02</span> Cover image <em>(appears inside the clapperboard)</em>
         </label>
         <div class="dropzone" data-target="image1">
           <input type="file" id="image1" name="image1" accept="image/*" required hidden>
           <div class="dropzone__empty">
             <div class="dropzone__icon">🎬</div>
-            <p>Click or drop a movie image</p>
+            <p>Click or drop the movie poster</p>
           </div>
           <img class="dropzone__preview" alt="">
         </div>
@@ -41,7 +49,7 @@
 
       <div class="field">
         <label class="field__label" for="image2">
-          <span class="field__num">02</span> Backdrop image <em>(fades behind your review)</em>
+          <span class="field__num">03</span> Backdrop image <em>(fades behind your review)</em>
         </label>
         <div class="dropzone" data-target="image2">
           <input type="file" id="image2" name="image2" accept="image/*" required hidden>
@@ -55,7 +63,7 @@
 
       <div class="field">
         <label class="field__label" for="review_text">
-          <span class="field__num">03</span> Your review <em>(4–5 sentences)</em>
+          <span class="field__num">04</span> Your review <em>(4–5 sentences)</em>
         </label>
         <textarea id="review_text" name="review_text" rows="5" maxlength="600"
           placeholder="This film surprised me with its patience and its confidence..." required></textarea>
@@ -64,7 +72,7 @@
 
       <div class="field">
         <label class="field__label">
-          <span class="field__num">04</span> Rating
+          <span class="field__num">05</span> Rating
         </label>
         <div class="star-picker" id="star-picker">
           <div class="star-picker__row star-picker__row--bg">★★★★★</div>

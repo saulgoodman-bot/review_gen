@@ -26,11 +26,16 @@ def generate():
     try:
         image1 = request.files.get("image1")
         image2 = request.files.get("image2")
+        movie_name = (request.form.get("movie_name") or "").strip()
         review_text = (request.form.get("review_text") or "").strip()
         rating_raw = request.form.get("rating", "0")
 
-        if not image1 or not image2:
-            return jsonify(error="Please upload both movie images."), 400
+        if not movie_name:
+            return jsonify(error="Please enter the movie name."), 400
+        if not image1:
+            return jsonify(error="Please upload a cover image."), 400
+        if not image2:
+            return jsonify(error="Please upload a backdrop image."), 400
         if not review_text:
             return jsonify(error="Please write a short review."), 400
 
@@ -44,14 +49,14 @@ def generate():
             img1 = Image.open(image1.stream)
             img1.load()
         except Exception:
-            return jsonify(error="Image 1 could not be read. Try a different file."), 400
+            return jsonify(error="Cover image could not be read. Try a different file."), 400
         try:
             img2 = Image.open(image2.stream)
             img2.load()
         except Exception:
             return jsonify(error="Image 2 could not be read. Try a different file."), 400
 
-        cover = generate_cover_image(img1, brand=BRAND_HANDLE)
+        cover = generate_cover_image(img1, movie_name)
         review = generate_review_image(img2, review_text, rating, brand=BRAND_WATERMARK)
 
         cover_b64 = base64.b64encode(image_to_bytes(cover)).decode("ascii")
