@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Review Slate — Instagram Post Generator</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="filmstrip" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="topbar__mark">REVIEW <span>SLATE</span></div>
+  <div class="topbar__handle">{{ brand_handle }}</div>
+</header>
+
+<main class="layout">
+
+  <!-- ============ FORM (the "slate") ============ -->
+  <section class="slate" aria-label="Post details">
+    <div class="slate__label-row">
+      <span>SCENE</span><span>INPUT</span>
+    </div>
+
+    <form id="review-form">
+
+      <div class="field">
+        <label class="field__label" for="image1">
+          <span class="field__num">01</span> Cover image <em>(sits inside the clapperboard)</em>
+        </label>
+        <div class="dropzone" data-target="image1">
+          <input type="file" id="image1" name="image1" accept="image/*" required hidden>
+          <div class="dropzone__empty">
+            <div class="dropzone__icon">🎬</div>
+            <p>Click or drop a movie image</p>
+          </div>
+          <img class="dropzone__preview" alt="">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="image2">
+          <span class="field__num">02</span> Backdrop image <em>(fades behind your review)</em>
+        </label>
+        <div class="dropzone" data-target="image2">
+          <input type="file" id="image2" name="image2" accept="image/*" required hidden>
+          <div class="dropzone__empty">
+            <div class="dropzone__icon">🖼️</div>
+            <p>Click or drop a movie image</p>
+          </div>
+          <img class="dropzone__preview" alt="">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="review_text">
+          <span class="field__num">03</span> Your review <em>(4–5 sentences)</em>
+        </label>
+        <textarea id="review_text" name="review_text" rows="5" maxlength="600"
+          placeholder="This film surprised me with its patience and its confidence..." required></textarea>
+        <div class="char-count"><span id="char-count">0</span>/600</div>
+      </div>
+
+      <div class="field">
+        <label class="field__label">
+          <span class="field__num">04</span> Rating
+        </label>
+        <div class="star-picker" id="star-picker">
+          <div class="star-picker__row star-picker__row--bg">★★★★★</div>
+          <div class="star-picker__row star-picker__row--fill" id="star-fill">★★★★★</div>
+        </div>
+        <input type="hidden" id="rating" name="rating" value="0">
+        <div class="rating-readout"><span id="rating-readout">0</span> / 5</div>
+      </div>
+
+      <button type="submit" class="btn-generate" id="generate-btn">
+        Generate Instagram posts
+      </button>
+      <p class="error" id="form-error" hidden></p>
+    </form>
+  </section>
+
+  <!-- ============ RESULTS ============ -->
+  <section class="results" aria-label="Generated posts">
+    <div class="results__empty" id="results-empty">
+      <div class="results__empty-mark">01 / 02</div>
+      <p>Your two ready-to-post images will appear here.</p>
+    </div>
+
+    <div class="results__grid" id="results-grid" hidden>
+      <div class="post-card">
+        <p class="post-card__title">Slide 1 — Cover</p>
+        <img id="cover-preview" alt="Generated cover post">
+        <a id="cover-download" class="btn-download" download="cover.png">Download PNG</a>
+      </div>
+      <div class="post-card">
+        <p class="post-card__title">Slide 2 — Review</p>
+        <img id="review-preview" alt="Generated review post">
+        <a id="review-download" class="btn-download" download="review.png">Download PNG</a>
+      </div>
+    </div>
+
+    <div class="loading" id="loading" hidden>
+      <div class="loading__spinner"></div>
+      <p>Building your slate…</p>
+    </div>
+  </section>
+
+</main>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
