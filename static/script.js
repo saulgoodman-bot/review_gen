@@ -4,6 +4,9 @@ document.querySelectorAll(".dropzone").forEach((zone) => {
   const preview = zone.querySelector(".dropzone__preview");
 
   zone.addEventListener("click", () => input.click());
+  zone.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); input.click(); }
+  });
 
   input.addEventListener("change", () => {
     const file = input.files[0];
@@ -50,6 +53,7 @@ function setRating(value) {
   value = Math.max(0, Math.min(5, Math.round(value * 2) / 2));
   ratingInput.value = value;
   ratingReadout.textContent = value;
+  picker.setAttribute("aria-valuenow", value);
   fill.style.width = (value / 5) * 100 + "%";
 }
 
@@ -70,6 +74,13 @@ picker.addEventListener("click", (e) => {
 picker.addEventListener("mouseleave", () => {
   const locked = ratingInput.dataset.locked || 0;
   setRating(parseFloat(locked));
+});
+picker.addEventListener("keydown", (e) => {
+  if (!["ArrowLeft", "ArrowDown", "ArrowRight", "ArrowUp", "Home", "End"].includes(e.key)) return;
+  e.preventDefault();
+  const value = e.key === "Home" ? 0 : e.key === "End" ? 5 : Number(ratingInput.value) + (["ArrowLeft", "ArrowDown"].includes(e.key) ? -0.5 : 0.5);
+  setRating(value);
+  ratingInput.dataset.locked = ratingInput.value;
 });
 setRating(0);
 
@@ -101,7 +112,7 @@ form.addEventListener("submit", async (e) => {
 
   try {
     const res = await fetch("/generate", { method: "POST", body: formData });
-    const data = await res.json();
+    const data = await res.json().catch(() => { throw new Error("The server could not respond. Please try again shortly."); });
     if (!res.ok) throw new Error(data.error || "Generation failed.");
 
     document.getElementById("cover-preview").src = data.cover;

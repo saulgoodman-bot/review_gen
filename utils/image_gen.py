@@ -1,7 +1,7 @@
 """
 Image generation engine for the movie-review Instagram post generator.
 
-Produces a supplied square cover template and a 1080x1080 review PNG from user input:
+Produces two 1080x1350 portrait PNGs from user input:
   1. cover image  -> the supplied clapperboard cover artwork with the
                       uploaded movie poster inserted into the slate and the
                       entered movie title added at the upper-left.
@@ -16,9 +16,11 @@ import math
 import os
 from io import BytesIO
 
-from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 CANVAS = 1080
+HEIGHT = 1350
+REVIEW_BACKGROUND = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "images", "review-background.png")
 FONT_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "fonts")
 
 ANTON = os.path.join(FONT_DIR, "Anton-Regular.ttf")
@@ -26,7 +28,7 @@ POPPINS_SEMI = os.path.join(FONT_DIR, "Poppins-SemiBold.ttf")
 POPPINS_BOLD = os.path.join(FONT_DIR, "Poppins-Bold.ttf")
 PLAYFAIR_VAR = os.path.join(FONT_DIR, "PlayfairDisplay-Variable.ttf")
 COVER_TEMPLATE = os.path.join(
-    os.path.dirname(os.path.dirname(__file__)), "static", "images", "cover-template.png"
+    os.path.dirname(os.path.dirname(__file__)), "static", "images", "cover-portrait.png"
 )
 
 # ---- brand palette -----------------------------------------------------
@@ -62,18 +64,24 @@ def cover_resize(img: Image.Image, w: int, h: int) -> Image.Image:
 
 
 def wrap_text(draw, text, font, max_width):
-    words = text.split()
-    lines, cur = [], ""
-    for word in words:
-        trial = (cur + " " + word).strip()
-        if draw.textlength(trial, font=font) <= max_width:
-            cur = trial
-        else:
-            if cur:
-                lines.append(cur)
-            cur = word
-    if cur:
-        lines.append(cur)
+    """Preserve paragraph breaks and split words wider than the text area."""
+    lines = []
+    for paragraph in text.split("\n"):
+        current = ""
+        for word in paragraph.split():
+            trial = (current + " " + word).strip()
+            if draw.textlength(trial, font=font) <= max_width:
+                current = trial
+                continue
+            if current:
+                lines.append(current)
+            current = ""
+            for char in word:
+                if current and draw.textlength(current + char, font=font) > max_width:
+                    lines.append(current)
+                    current = ""
+                current += char
+        lines.append(current)
     return lines
 
 
@@ -86,13 +94,13 @@ def fit_text_block(draw, text, max_width, max_height, start=64, minimum=30,
         lines = wrap_text(draw, text, font, max_width)
         line_h = font.getbbox("Ag")[3] * line_gap
         total_h = line_h * len(lines)
-        if total_h <= max_height:
+        if total_h <= max_height and all(draw.textlength(line, font=font) <= max_width for line in lines):
             return font, lines, line_h
         size -= 2
     font = _playfair(minimum, weight)
     lines = wrap_text(draw, text, font, max_width)
     line_h = font.getbbox("Ag")[3] * line_gap
-    return font, lines, line_h
+    raise ValueError("Review is too long to fit. Please shorten it or add fewer paragraph breaks.")
 
 
 # ---- star rating ---------------------------------------------------------
@@ -105,12 +113,12 @@ def _star_points(cx, cy, r_outer, r_inner):
     return pts
 
 
-def make_star(size, fraction, gold=GOLD, empty=(255, 255, 255, 70)):
+def make_star(size, fraction, gold=(255, 165, 0), empty=(255, 255, 255, 0)):
     """Return an RGBA star image, `fraction` (0/0.5/1) filled gold left-to-right."""
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    pts = _star_points(size / 2, size / 2, size * 0.49, size * 0.19)
-    d.polygon(pts, fill=empty, outline=(255, 255, 255, 140), width=2)
+    pts = _star_points(size / 2, size / 2, size * 0.49, size * 0.22)
+    d.polygon(pts, fill=empty, outline=(0, 0, 0, 255), width=7)
 
     if fraction > 0:
         gold_layer = Image.new("RGBA", (size, size), (0, 0, 0, 0))
@@ -123,6 +131,7 @@ def make_star(size, fraction, gold=GOLD, empty=(255, 255, 255, 70)):
             empty_alpha = Image.new("L", (size, size), 0)
             gold_layer.putalpha(Image.composite(gold_layer.split()[3], empty_alpha, mask))
         img = Image.alpha_composite(img, gold_layer)
+    ImageDraw.Draw(img).line(pts + [pts[0]], fill=(0, 0, 0, 255), width=7, joint="curve")
     return img
 
 
@@ -145,33 +154,33 @@ def draw_rating_row(canvas: Image.Image, rating: float, center_x: int, y: int,
 def generate_cover_image(image1: Image.Image, movie_name: str) -> Image.Image:
     """Add the uploaded poster and title to the supplied cover artwork."""
     with Image.open(COVER_TEMPLATE) as template:
-        canvas = ImageOps.exif_transpose(template).convert("RGB")
+        canvas = cover_resize(template, CANVAS, HEIGHT)
 
     # The panel below the clapper sticks is the poster window in the supplied
     # artwork.  Keeping the coordinates relative preserves the template's
     # composition at its native resolution.
-    poster_x = int(canvas.width * 0.175)
-    poster_y = int(canvas.height * 0.445)
-    poster_w = int(canvas.width * 0.585)
-    poster_h = int(canvas.height * 0.345)
+    poster_x = int(canvas.width * 0.09)
+    poster_y = int(canvas.height * 0.447)
+    poster_w = int(canvas.width * 0.728)
+    poster_h = int(canvas.height * 0.328)
     poster = cover_resize(image1, poster_w, poster_h)
     canvas.paste(poster, (poster_x, poster_y))
 
     draw = ImageDraw.Draw(canvas)
-    max_width = int(canvas.width * 0.66)
-    max_height = int(canvas.height * 0.075)
-    size = int(canvas.height * 0.075)
-    while size > 36:
-        font = _font(ANTON, size)
+    max_width = int(canvas.width * 0.83)
+    max_height = int(canvas.height * 0.058)
+    size = int(canvas.height * 0.058)
+    while size > 10:
+        font = _font(POPPINS_BOLD, size)
         bbox = draw.textbbox((0, 0), movie_name.upper(), font=font)
         if bbox[2] <= max_width and bbox[3] <= max_height:
             break
         size -= 2
     else:
-        font = _font(ANTON, 36)
+        font = _font(POPPINS_BOLD, 10)
 
     draw.text(
-        (int(canvas.width * 0.05), int(canvas.height * 0.025)),
+        (int(canvas.width * 0.05), int(canvas.height * 0.135)),
         movie_name.upper(),
         font=font,
         fill=(255, 255, 255),
@@ -182,61 +191,22 @@ def generate_cover_image(image1: Image.Image, movie_name: str) -> Image.Image:
 # ---- review image ----------------------------------------------------------
 def generate_review_image(image2: Image.Image, review_text: str, rating: float,
                            brand="SCENE & OPINION") -> Image.Image:
-    bg = cover_resize(image2, CANVAS, CANVAS)
-    bg = bg.filter(ImageFilter.GaussianBlur(2))
-
-    overlay = Image.new("RGBA", (CANVAS, CANVAS), (0, 0, 0, 0))
-    od = ImageDraw.Draw(overlay)
-    for y in range(CANVAS):
-        t = y / CANVAS
-        # darker at top & bottom, a touch lighter in the middle band
-        alpha = int(178 + 45 * abs(t - 0.5) * 2)
-        od.line([(0, y), (CANVAS, y)], fill=(8, 8, 12, alpha))
-    canvas = Image.alpha_composite(bg.convert("RGBA"), overlay)
-
-    # diagonal watermark, low-opacity brand wordmark
-    wm_font = _font(POPPINS_BOLD, 64)
-    wm = Image.new("RGBA", (CANVAS, CANVAS), (0, 0, 0, 0))
-    wd = ImageDraw.Draw(wm)
-    wm_text = brand.upper()
-    tw = wd.textlength(wm_text, font=wm_font)
-    wd.text(((CANVAS - tw) / 2, CANVAS / 2 - 40), wm_text, font=wm_font,
-             fill=(255, 255, 255, 28))
-    wm = wm.rotate(-24, resample=Image.BICUBIC)
-    wm = wm.resize((CANVAS, CANVAS))
-    canvas = Image.alpha_composite(canvas, wm)
-
-    draw = ImageDraw.Draw(canvas, "RGBA")
-
-    # review text block, vertically centered-ish, above the stars
-    text_area_w = CANVAS - 220
-    text_area_h = 560
-    font, lines, line_h = fit_text_block(draw, review_text, text_area_w,
-                                          text_area_h, start=66, minimum=32)
-    total_h = line_h * len(lines)
-    start_y = 300 - total_h / 2 + 120
-    y = start_y
+    bg = cover_resize(image2, CANVAS, HEIGHT)
+    canvas = Image.blend(bg, Image.new("RGB", bg.size, "white"), 0.88).convert("RGBA")
+    with Image.open(REVIEW_BACKGROUND) as source:
+        logo = cover_resize(source, CANVAS, HEIGHT).convert("RGBA")
+    # White pixels leave the movie backdrop visible; dark logo pixels become a faint watermark.
+    ink = ImageOps.invert(logo.convert("L")).point(lambda value: round(value * 0.18))
+    logo.putalpha(ink)
+    canvas = Image.alpha_composite(canvas, logo)
+    draw = ImageDraw.Draw(canvas)
+    font, lines, line_h = fit_text_block(
+        draw, review_text, 864, 970, start=50, minimum=28, line_gap=1.3)
+    y = 100
     for line in lines:
-        lw = draw.textlength(line, font=font)
-        x = (CANVAS - lw) / 2
-        # soft shadow for legibility
-        draw.text((x + 2, y + 3), line, font=font, fill=(0, 0, 0, 160))
-        draw.text((x, y), line, font=font, fill=(255, 255, 255, 255))
+        draw.text((108, y), line, font=font, fill="black", anchor="lt")
         y += line_h
-
-    # small quote mark flourish above the text
-    quote_font = _playfair(140, "Black" if False else "Bold")
-    draw.text((CANVAS / 2 - 40, start_y - 150), "\u201c", font=quote_font,
-              fill=(238, 178, 60, 200))
-
-    rating = draw_rating_row(canvas, rating, CANVAS // 2, CANVAS - 200, star_size=78, gap=18)
-
-    label_font = _font(POPPINS_SEMI, 30)
-    label = f"{rating:g} / 5"
-    lw = draw.textlength(label, font=label_font)
-    draw.text(((CANVAS - lw) / 2, CANVAS - 108), label, font=label_font,
-              fill=(235, 232, 225, 255))
-
+    draw_rating_row(canvas, rating, CANVAS // 2, 1130, star_size=136, gap=18)
     return canvas.convert("RGB")
 
 

@@ -312,3 +312,7 @@ textarea:focus { outline: none; border-color: var(--gold); }
   animation: spin 0.9s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+[hidden] { display: none !important; }
+.post-card img { aspect-ratio: 4 / 5; object-fit: contain; }
+:focus-visible { outline: 3px solid var(--gold); outline-offset: 4px; }
